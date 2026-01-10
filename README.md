@@ -34,3 +34,6 @@ Logs are written to `logs\msstore-repair.log`.
 ## Download
 Grab the latest ZIP from the GitHub Releases page:
 https://github.com/gmy77/msstore-repair-wpf/releases
+
+## License
+MIT
