@@ -170,6 +170,8 @@ function Set-Busy {
 }
 
 $script:ActiveWorker = $null
+$script:CurrentAction = $null
+$script:CurrentTitle = $null
 function Report-Progress {
     param([int]$Percent, [string]$Message)
 
@@ -192,13 +194,14 @@ function Start-Action {
     Set-Busy -IsBusy $true -Status $Title
     Write-Log "Starting: $Title" 'Info'
 
-    $titleLocal = $Title
+    $script:CurrentTitle = $Title
+    $script:CurrentAction = $Action
     $worker = New-Object System.ComponentModel.BackgroundWorker
     $worker.WorkerReportsProgress = $true
 
     $worker.add_DoWork([System.ComponentModel.DoWorkEventHandler]{
         param($sender, $e)
-        & $using:Action
+        & $script:CurrentAction
     })
 
     $worker.add_ProgressChanged([System.ComponentModel.ProgressChangedEventHandler]{
@@ -216,13 +219,15 @@ function Start-Action {
     $worker.add_RunWorkerCompleted([System.ComponentModel.RunWorkerCompletedEventHandler]{
         param($sender, $e)
         if ($e.Error) {
-            Write-Log "Failed: $using:titleLocal - $($e.Error.Exception.Message)" 'Error'
+            Write-Log "Failed: $script:CurrentTitle - $($e.Error.Exception.Message)" 'Error'
         }
         else {
-            Write-Log "Completed: $using:titleLocal" 'Success'
+            Write-Log "Completed: $script:CurrentTitle" 'Success'
         }
         Set-Busy -IsBusy $false -Status 'Idle'
         $script:ActiveWorker = $null
+        $script:CurrentAction = $null
+        $script:CurrentTitle = $null
     })
 
     $script:ActiveWorker = $worker
