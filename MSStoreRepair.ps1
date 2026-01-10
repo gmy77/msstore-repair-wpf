@@ -130,6 +130,30 @@ function Write-Log {
     })
 }
 
+function Test-AppxSupport {
+    $getAppx = Get-Command Get-AppxPackage -ErrorAction SilentlyContinue
+    $addAppx = Get-Command Add-AppxPackage -ErrorAction SilentlyContinue
+
+    if (-not $getAppx -or -not $addAppx) {
+        Write-Log 'Appx cmdlets not available. Use Windows PowerShell 5.1 or enable WindowsCompatibility.' 'Warning'
+        return $false
+    }
+
+    return $true
+}
+
+function Register-UnhandledExceptionLogging {
+    $handler = {
+        param($sender, $eventArgs)
+        $message = $eventArgs.ExceptionObject | Out-String
+        Add-Content -Path $logFile -Value "[{0}] [Error] Unhandled exception: {1}" -f (Get-Date).ToString('yyyy-MM-dd HH:mm:ss'), $message.Trim()
+    }
+
+    [System.AppDomain]::CurrentDomain.add_UnhandledException($handler)
+}
+
+Register-UnhandledExceptionLogging
+
 function Set-Busy {
     param([bool]$IsBusy, [string]$Status = 'Idle')
 
@@ -171,7 +195,12 @@ function Start-Action {
     $worker.WorkerReportsProgress = $true
 
     $worker.DoWork = {
-        & $using:Action
+        try {
+            & $using:Action
+        }
+        catch {
+            throw
+        }
     }
 
     $worker.ProgressChanged = {
@@ -251,15 +280,35 @@ function Clear-LocalCache {
 }
 
 function ReRegister-Store {
+    if (-not (Test-AppxSupport)) {
+        return
+    }
+
     Write-Log 'Re-registering Microsoft Store...' 'Info'
-    Get-AppxPackage *WindowsStore* -AllUsers | ForEach-Object {
-        Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml" -ErrorAction SilentlyContinue
+    try {
+        Get-AppxPackage *WindowsStore* -AllUsers | ForEach-Object {
+            Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml" -ErrorAction SilentlyContinue
+        }
+    }
+    catch {
+        Write-Log "Re-register Store failed: $($_.Exception.Message)" 'Error'
     }
 }
 
 function Repair-AllApps {
+    if (-not (Test-AppxSupport)) {
+        return
+    }
+
     Write-Log 'Re-registering all UWP apps...' 'Info'
-    $apps = Get-AppxPackage -AllUsers
+    $apps = @()
+    try {
+        $apps = Get-AppxPackage -AllUsers
+    }
+    catch {
+        Write-Log "Get-AppxPackage failed: $($_.Exception.Message)" 'Error'
+        return
+    }
     $total = if ($apps) { $apps.Count } else { 0 }
     $index = 0
     $failures = 0
@@ -285,38 +334,45 @@ function Repair-AllApps {
 function Run-Diagnostics {
     Write-Log 'Diagnostics started.' 'Info'
 
-    $services = @(
-        @{Name='wuauserv'; Display='Windows Update'},
-        @{Name='bits'; Display='BITS'},
-        @{Name='WSService'; Display='Windows Store Service'},
-        @{Name='InstallService'; Display='Store Install Service'},
-        @{Name='AppXSvc'; Display='AppX Deployment Service'}
-    )
+    try {
+        $services = @(
+            @{Name='wuauserv'; Display='Windows Update'},
+            @{Name='bits'; Display='BITS'},
+            @{Name='WSService'; Display='Windows Store Service'},
+            @{Name='InstallService'; Display='Store Install Service'},
+            @{Name='AppXSvc'; Display='AppX Deployment Service'}
+        )
 
-    foreach ($svc in $services) {
-        $service = Get-Service -Name $svc.Name -ErrorAction SilentlyContinue
-        if ($service) {
-            Write-Log "$($svc.Display): $($service.Status)" 'Info'
+        foreach ($svc in $services) {
+            $service = Get-Service -Name $svc.Name -ErrorAction SilentlyContinue
+            if ($service) {
+                Write-Log "$($svc.Display): $($service.Status)" 'Info'
+            }
+            else {
+                Write-Log "$($svc.Display): Not found" 'Warning'
+            }
         }
-        else {
-            Write-Log "$($svc.Display): Not found" 'Warning'
+
+        if (Test-AppxSupport) {
+            $store = Get-AppxPackage -Name Microsoft.WindowsStore -ErrorAction SilentlyContinue
+            if ($store) {
+                Write-Log "Store version: $($store.Version)" 'Info'
+                Write-Log "Store architecture: $($store.Architecture)" 'Info'
+            }
+            else {
+                Write-Log 'Microsoft Store not found.' 'Error'
+            }
+        }
+
+        $cachePath = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsStore_8wekyb3d8bbwe\LocalCache"
+        if (Test-Path $cachePath) {
+            $size = (Get-ChildItem -Path $cachePath -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
+            $sizeMB = [math]::Round($size / 1MB, 2)
+            Write-Log "Cache size: $sizeMB MB" 'Info'
         }
     }
-
-    $store = Get-AppxPackage -Name Microsoft.WindowsStore -ErrorAction SilentlyContinue
-    if ($store) {
-        Write-Log "Store version: $($store.Version)" 'Info'
-        Write-Log "Store architecture: $($store.Architecture)" 'Info'
-    }
-    else {
-        Write-Log 'Microsoft Store not found.' 'Error'
-    }
-
-    $cachePath = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsStore_8wekyb3d8bbwe\LocalCache"
-    if (Test-Path $cachePath) {
-        $size = (Get-ChildItem -Path $cachePath -Recurse -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
-        $sizeMB = [math]::Round($size / 1MB, 2)
-        Write-Log "Cache size: $sizeMB MB" 'Info'
+    catch {
+        Write-Log "Diagnostics failed: $($_.Exception.Message)" 'Error'
     }
 }
 
