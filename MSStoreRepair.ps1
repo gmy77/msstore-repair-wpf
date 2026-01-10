@@ -146,7 +146,8 @@ function Register-UnhandledExceptionLogging {
     $handler = {
         param($sender, $eventArgs)
         $message = $eventArgs.ExceptionObject | Out-String
-        Add-Content -Path $logFile -Value "[{0}] [Error] Unhandled exception: {1}" -f (Get-Date).ToString('yyyy-MM-dd HH:mm:ss'), $message.Trim()
+        $line = "[{0}] [Error] Unhandled exception: {1}" -f (Get-Date).ToString('yyyy-MM-dd HH:mm:ss'), $message.Trim()
+        Add-Content -Path $logFile -Value $line
     }
 
     [System.AppDomain]::CurrentDomain.add_UnhandledException($handler)
@@ -194,16 +195,12 @@ function Start-Action {
     $worker = New-Object System.ComponentModel.BackgroundWorker
     $worker.WorkerReportsProgress = $true
 
-    $worker.DoWork = {
-        try {
-            & $using:Action
-        }
-        catch {
-            throw
-        }
-    }
+    $worker.add_DoWork([System.ComponentModel.DoWorkEventHandler]{
+        param($sender, $e)
+        & $using:Action
+    })
 
-    $worker.ProgressChanged = {
+    $worker.add_ProgressChanged([System.ComponentModel.ProgressChangedEventHandler]{
         param($sender, $e)
         $window.Dispatcher.Invoke([action]{
             if ($e.ProgressPercentage -ge 0) {
@@ -213,9 +210,9 @@ function Start-Action {
                 $StatusText.Text = $e.UserState
             }
         })
-    }
+    })
 
-    $worker.RunWorkerCompleted = {
+    $worker.add_RunWorkerCompleted([System.ComponentModel.RunWorkerCompletedEventHandler]{
         param($sender, $e)
         if ($e.Error) {
             Write-Log "Failed: $Title - $($e.Error.Exception.Message)" 'Error'
@@ -225,7 +222,7 @@ function Start-Action {
         }
         Set-Busy -IsBusy $false -Status 'Idle'
         $script:ActiveWorker = $null
-    }
+    })
 
     $script:ActiveWorker = $worker
     $worker.RunWorkerAsync()
