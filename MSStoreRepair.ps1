@@ -219,7 +219,8 @@ function Start-Action {
     $worker.add_RunWorkerCompleted([System.ComponentModel.RunWorkerCompletedEventHandler]{
         param($sender, $e)
         if ($e.Error) {
-            Write-Log "Failed: $script:CurrentTitle - $($e.Error.Exception.Message)" 'Error'
+            $errorText = ($e.Error | Out-String).Trim()
+            Write-Log "Failed: $script:CurrentTitle - $errorText" 'Error'
         }
         else {
             Write-Log "Completed: $script:CurrentTitle" 'Success'
