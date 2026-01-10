@@ -201,7 +201,16 @@ function Start-Action {
 
     $worker.add_DoWork([System.ComponentModel.DoWorkEventHandler]{
         param($sender, $e)
-        & $script:CurrentAction
+        $runspace = [RunspaceFactory]::CreateRunspace()
+        $runspace.Open()
+        [Runspace]::DefaultRunspace = $runspace
+        try {
+            & $script:CurrentAction
+        }
+        finally {
+            $runspace.Close()
+            $runspace.Dispose()
+        }
     })
 
     $worker.add_ProgressChanged([System.ComponentModel.ProgressChangedEventHandler]{
