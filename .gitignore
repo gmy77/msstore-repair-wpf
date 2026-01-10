@@ -2,3 +2,4 @@ logs/
 *.log
 *.user
 .vs/
+*.zip
