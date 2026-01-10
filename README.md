@@ -1,6 +1,6 @@
 # Microsoft Store Repair (WPF) v1.0.1
 
-![Latest Release](https://img.shields.io/github/v/release/gmy77/msstore-repair-wpf?label=latest)
+[![Latest Release](https://img.shields.io/github/v/release/gmy77/msstore-repair-wpf?label=latest)](https://github.com/gmy77/msstore-repair-wpf/releases/latest)
 
 PowerShell tool with a WPF GUI to repair Microsoft Store update/download issues.
 
