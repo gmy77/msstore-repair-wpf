@@ -192,6 +192,7 @@ function Start-Action {
     Set-Busy -IsBusy $true -Status $Title
     Write-Log "Starting: $Title" 'Info'
 
+    $titleLocal = $Title
     $worker = New-Object System.ComponentModel.BackgroundWorker
     $worker.WorkerReportsProgress = $true
 
@@ -215,10 +216,10 @@ function Start-Action {
     $worker.add_RunWorkerCompleted([System.ComponentModel.RunWorkerCompletedEventHandler]{
         param($sender, $e)
         if ($e.Error) {
-            Write-Log "Failed: $Title - $($e.Error.Exception.Message)" 'Error'
+            Write-Log "Failed: $using:titleLocal - $($e.Error.Exception.Message)" 'Error'
         }
         else {
-            Write-Log "Completed: $Title" 'Success'
+            Write-Log "Completed: $using:titleLocal" 'Success'
         }
         Set-Busy -IsBusy $false -Status 'Idle'
         $script:ActiveWorker = $null
