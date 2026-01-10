@@ -48,7 +48,7 @@ if (-not (Test-Path $logDir)) {
 [xml]$xaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Microsoft Store Repair" Height="620" Width="980"
+        Title="Microsoft Store Repair v1.0.0" Height="620" Width="980"
         WindowStartupLocation="CenterScreen" Background="#1E1E1E" Foreground="#F0F0F0">
     <Grid Margin="14">
         <Grid.RowDefinitions>

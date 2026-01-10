@@ -1,4 +1,4 @@
-# Microsoft Store Repair (WPF)
+# Microsoft Store Repair (WPF) v1.0.0
 
 PowerShell tool with a WPF GUI to repair Microsoft Store update/download issues.
 
