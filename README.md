@@ -11,6 +11,9 @@ PowerShell tool with a WPF GUI to repair Microsoft Store update/download issues.
 - Diagnostics and logging
 - Full repair workflow
 
+## Screenshot
+![Microsoft Store Repair GUI](immagine.png)
+
 ## Requirements
 - Windows 11
 - PowerShell 5.1+ (or PowerShell 7)
