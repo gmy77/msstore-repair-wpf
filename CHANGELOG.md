@@ -7,3 +7,4 @@
 ## [1.0.1] - 2026-01-10
 - Fix background worker execution and logging in pwsh previews.
 - Add screenshot to README.
+- Normalize screenshot filename for GitHub rendering.
