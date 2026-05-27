@@ -1,5 +1,45 @@
 # Changelog
 
+## [3.0.0] - 2026-05-27
+
+### 🎨 UI Overhaul
+- Complete dark theme redesign with Windows 11 accent blue (#0078D4)
+- Custom ControlTemplate for all buttons: rounded corners, hover glow, press feedback
+- Three button styles: default, accent (Full Repair), danger (Cancel)
+- Header bar with version badge and dynamic Admin/No-Admin indicator
+- Footer status bar with animated status dot and live elapsed timer (⏱ mm:ss)
+
+### 🌈 Color-Coded Log (RichTextBox)
+- Replaced plain TextBox with RichTextBox for per-entry coloring
+- Info → #DADADA (white-gray), Success → #6EC26E (green), Warning → #D9A520 (amber), Error → #F05454 (red)
+- Emoji icons per level: ✔ / ⚠ / ✖ prepended to each log entry
+- Entry counter shown at bottom-right of log panel
+- Auto-scroll toggle checkbox to lock scrolling while reading
+
+### ✋ Cancellation Support
+- BackgroundWorker now uses WorkerSupportsCancellation = true
+- Cancel button enabled during operations, disabled when idle
+- `Test-CancelRequested` check at the top of each loop iteration
+- Cancel propagates cleanly through Full Repair's 5-step sequence
+
+### 💬 Confirmations & QoL
+- Confirmation dialog before: Clear LocalCache, Repair All Apps, Full Repair
+- Tooltip on every button explaining what the operation does
+- "Clear Log View" button (clears display only, not files)
+- Indeterminate progress bar until first ReportProgress call
+- Progress bar resets to 0 on idle (not stuck at 100%)
+
+### ⏱ Elapsed Time Tracking
+- Operation start time recorded in `$script:OpStart`
+- Live mm:ss counter updated on every ProgressChanged event
+- Elapsed seconds appended to Completed/Cancelled log entries
+
+### 🛠 Logic Improvements
+- Cancel-check added to Restart-StoreServices and Repair-AllUWPApps loops
+- Invoke-FullRepair checks cancel between each of the 5 steps
+- Diagnostics now color-codes service status (green if Running, yellow if not)
+- Cache size warning if > 100 MB
+
 ## [2.0.0] - 2026-01-10
 
 ### 🚀 Performance Improvements
